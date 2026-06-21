@@ -1,0 +1,16 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/
+
+# Node (only if tooling is added later)
+node_modules/
+
+# Local env / secrets
+.env
+.env.*
+
+# Build output of the deploy zip
+venkatesan-agency.zip
