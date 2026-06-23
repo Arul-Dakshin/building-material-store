@@ -2,6 +2,29 @@
 [build]
   publish = "."
 
+# ---- Security headers (apply to every response) ----
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Lock down where content can load from. Only same-origin + Google Fonts
+    # (styles/fonts) and the Google Maps embed are allowed. No inline scripts.
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-src https://www.google.com https://maps.google.com; form-action 'self'; upgrade-insecure-requests"
+    # Stop the site being framed by others (clickjacking).
+    X-Frame-Options = "DENY"
+    # Stop browsers from MIME-sniffing responses.
+    X-Content-Type-Options = "nosniff"
+    # Don't leak full URLs to third parties.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Disable powerful browser features the site doesn't use.
+    Permissions-Policy = "geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), accelerometer=()"
+    # Force HTTPS for a year (incl. subdomains).
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Isolate this window from any popups it opens.
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Legacy XSS auditor off (CSP supersedes it).
+    X-XSS-Protection = "0"
+
+# Long cache for images (overrides nothing above; just adds caching).
 [[headers]]
   for = "/images/*"
   [headers.values]

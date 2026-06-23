@@ -190,6 +190,14 @@ h1, h2, h3, h4 { font-family: var(--font-head); color: var(--ink); line-height: 
 }
 .add-btn:hover { background: var(--grad); color: #fff; transform: translateY(-2px); }
 .add-btn.added { background: var(--whatsapp); color: #fff; }
+.card__size-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.card__size-label { font-family: var(--font-head); font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.card__size {
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px;
+  font-family: var(--font-head); font-weight: 700; font-size: .85rem; color: var(--ink);
+  background: var(--bg-cream); cursor: pointer; transition: border-color .2s, box-shadow .2s;
+}
+.card__size:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(249,115,22,.15); }
 
 /* ---------- Other materials band ---------- */
 .band { position: relative; background: var(--grad); color: #fff; overflow: hidden; }
@@ -281,6 +289,7 @@ h1, h2, h3, h4 { font-family: var(--font-head); color: var(--ink); line-height: 
 .cart-item__img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; flex: none; }
 .cart-item__main { flex: 1; min-width: 0; }
 .cart-item__name { font-family: var(--font-head); font-weight: 700; font-size: .98rem; color: var(--ink); }
+.cart-item__size { display: inline-block; margin-left: 4px; font-family: var(--font-body); font-size: .72rem; font-weight: 700; color: var(--primary-deep); background: var(--bg-cream); border: 1px solid #ffe2cc; padding: 1px 8px; border-radius: 999px; vertical-align: middle; }
 .cart-item__controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .qty button { width: 30px; height: 30px; border: none; background: var(--bg-soft); cursor: pointer; font-size: 1.1rem; color: var(--primary-dark); font-weight: 700; transition: background .2s; }

@@ -5,6 +5,11 @@
 
 const WHATSAPP_NUMBER = "919003212728"; // +91 90032 12728
 
+// Neutral placeholder used if a product image ever fails to load
+// (attached via JS, not inline, so the strict CSP can block all inline scripts).
+const IMG_FALLBACK =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23eef1f5'/%3E%3C/svg%3E";
+
 /* ---- Product catalogue ---- */
 const PRODUCTS = [
   {
@@ -15,6 +20,16 @@ const PRODUCTS = [
     img: "images/bricks.jpg",
     unit: "nos",
     units: ["nos", "1000s", "lorry load"],
+  },
+  {
+    id: "aac-blocks",
+    name: "AAC Blocks",
+    tag: "Lightweight",
+    desc: "Autoclaved aerated concrete blocks — light, precise & strong, with great heat & sound insulation. Available in 3 to 12 inch thickness.",
+    img: "images/aac-blocks.jpg",
+    unit: "nos",
+    units: ["nos", "pallets", "m³"],
+    sizes: ["3 inch", "4 inch", "5 inch", "6 inch", "8 inch", "9 inch", "10-12 inch"],
   },
   {
     id: "cement",
@@ -89,22 +104,37 @@ function renderProducts() {
     <article class="card reveal" data-id="${p.id}">
       <div class="card__media">
         <span class="card__tag">${p.tag}</span>
-        <img src="${p.img}" alt="${p.name} — building material" loading="lazy"
-             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect width=%22400%22 height=%22300%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%22200%22 y=%22155%22 font-size=%2220%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 font-family=%22Arial%22%3E${encodeURIComponent(p.name)}%3C/text%3E%3C/svg%3E'" />
+        <img src="${p.img}" alt="${p.name} — building material" loading="lazy" />
       </div>
       <div class="card__body">
         <h3 class="card__title">${p.name}</h3>
         <p class="card__desc">${p.desc}</p>
       </div>
       <div class="card__foot">
-        <span class="card__unit">by <b>${p.unit}</b></span>
+        ${
+          p.sizes
+            ? `<label class="card__size-wrap">
+                 <span class="card__size-label">Thickness</span>
+                 <select class="card__size" data-size-select="${p.id}" aria-label="${p.name} thickness">
+                   ${p.sizes.map((s) => `<option value="${s}">${s}</option>`).join("")}
+                 </select>
+               </label>`
+            : `<span class="card__unit">by <b>${p.unit}</b></span>`
+        }
         <button class="add-btn" data-add="${p.id}">+ Add to Order</button>
       </div>
     </article>`
   ).join("");
 
   $$("[data-add]").forEach((btn) =>
-    btn.addEventListener("click", () => addToCart(btn.dataset.add, btn))
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.add;
+      const sizeSel = grid.querySelector(`[data-size-select="${id}"]`);
+      addToCart(id, btn, sizeSel ? sizeSel.value : undefined);
+    })
+  );
+  $$("#productGrid .card__media img").forEach((im) =>
+    im.addEventListener("error", () => { im.src = IMG_FALLBACK; }, { once: true })
   );
   observeReveals();
 }
@@ -112,14 +142,19 @@ function renderProducts() {
 /* ============================================================
    Cart logic
    ============================================================ */
-function addToCart(id, btn) {
+function lineKey(id, size) {
+  return size ? `${id}__${size}` : id;
+}
+
+function addToCart(id, btn, size) {
   const p = PRODUCTS.find((x) => x.id === id);
-  if (!cart[id]) cart[id] = { qty: 1, unit: p.units[0] };
-  else cart[id].qty += 1;
+  const key = lineKey(id, size);
+  if (!cart[key]) cart[key] = { id, qty: 1, unit: p.units[0], size };
+  else cart[key].qty += 1;
 
   renderCart();
   updateCount();
-  showToast(`${p.name} added to your order`);
+  showToast(`${p.name}${size ? ` (${size})` : ""} added to your order`);
 
   if (btn) {
     btn.classList.add("added");
@@ -161,26 +196,26 @@ function renderCart() {
   empty.style.display = ids.length ? "none" : "block";
 
   wrap.innerHTML = ids
-    .map((id) => {
-      const p = PRODUCTS.find((x) => x.id === id);
-      const item = cart[id];
+    .map((key) => {
+      const item = cart[key];
+      const p = PRODUCTS.find((x) => x.id === item.id);
       const options = p.units
         .map((u) => `<option value="${u}" ${u === item.unit ? "selected" : ""}>${u}</option>`)
         .join("");
+      const sizeBadge = item.size ? ` <span class="cart-item__size">${item.size}</span>` : "";
       return `
-      <div class="cart-item" data-id="${id}">
-        <img class="cart-item__img" src="${p.img}" alt="${p.name}"
-             onerror="this.style.visibility='hidden'" />
+      <div class="cart-item" data-id="${key}">
+        <img class="cart-item__img" src="${p.img}" alt="${p.name}" />
         <div class="cart-item__main">
-          <div class="cart-item__name">${p.name}</div>
+          <div class="cart-item__name">${p.name}${sizeBadge}</div>
           <div class="cart-item__controls">
             <span class="qty">
-              <button data-dec="${id}" aria-label="Decrease">−</button>
-              <input type="number" min="1" value="${item.qty}" data-qty="${id}" aria-label="Quantity" />
-              <button data-inc="${id}" aria-label="Increase">+</button>
+              <button data-dec="${key}" aria-label="Decrease">−</button>
+              <input type="number" min="1" value="${item.qty}" data-qty="${key}" aria-label="Quantity" />
+              <button data-inc="${key}" aria-label="Increase">+</button>
             </span>
-            <select class="cart-item__unit" data-unit="${id}">${options}</select>
-            <button class="cart-item__remove" data-remove="${id}">Remove</button>
+            <select class="cart-item__unit" data-unit="${key}">${options}</select>
+            <button class="cart-item__remove" data-remove="${key}">Remove</button>
           </div>
         </div>
       </div>`;
@@ -193,6 +228,9 @@ function renderCart() {
   $$("[data-qty]").forEach((i) => (i.onchange = () => setQty(i.dataset.qty, i.value)));
   $$("[data-unit]").forEach((s) => (s.onchange = () => setUnit(s.dataset.unit, s.value)));
   $$("[data-remove]").forEach((b) => (b.onclick = () => removeItem(b.dataset.remove)));
+  $$("#cartItems .cart-item__img").forEach((im) =>
+    im.addEventListener("error", () => { im.style.visibility = "hidden"; }, { once: true })
+  );
 }
 
 /* ============================================================
@@ -208,9 +246,11 @@ function buildMessage() {
 
   if (ids.length) {
     msg += "\n*🧱 Materials:*\n";
-    ids.forEach((id) => {
-      const p = PRODUCTS.find((x) => x.id === id);
-      msg += `• ${p.name} — ${cart[id].qty} ${cart[id].unit}\n`;
+    ids.forEach((key) => {
+      const c = cart[key];
+      const p = PRODUCTS.find((x) => x.id === c.id);
+      const sizeStr = c.size ? ` (${c.size})` : "";
+      msg += `• ${p.name}${sizeStr} — ${c.qty} ${c.unit}\n`;
     });
   }
   if (other) msg += `\n*📦 Other materials:*\n${other}\n`;
@@ -242,7 +282,7 @@ function sendOrder() {
   field.classList.remove("invalid");
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildMessage())}`;
-  window.open(url, "_blank");
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /* Quick-order link (hero / fab / contact) — opens WhatsApp with a generic greeting */
@@ -353,7 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (el)
       el.addEventListener("click", (e) => {
         e.preventDefault();
-        window.open(quickOrderUrl(), "_blank");
+        window.open(quickOrderUrl(), "_blank", "noopener,noreferrer");
       });
   });
 });
